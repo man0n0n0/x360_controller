@@ -1,0 +1,64 @@
+{
+ "version": 1,
+ "channels": [
+  "joyL",
+  "joyR",
+  "trigL",
+  "trigR",
+  "motorA",
+  "motorB",
+  "button",
+  "arrow"
+ ],
+ "duration": 2.1223,
+ "frames": [
+  [
+   0.7352,
+   {
+    "arrow": "left"
+   }
+  ],
+  [
+   0.8173,
+   {
+    "arrow": null
+   }
+  ],
+  [
+   1.1034,
+   {
+    "arrow": "left"
+   }
+  ],
+  [
+   1.2524,
+   {
+    "arrow": null
+   }
+  ],
+  [
+   1.5522,
+   {
+    "arrow": "left"
+   }
+  ],
+  [
+   1.7101,
+   {
+    "arrow": null
+   }
+  ],
+  [
+   2.0025,
+   {
+    "arrow": "left"
+   }
+  ],
+  [
+   2.1223,
+   {
+    "arrow": null
+   }
+  ]
+ ]
+}
