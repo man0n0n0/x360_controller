@@ -334,7 +334,7 @@ class App(tk.Tk):
             self._hold_button(btns, name, "button", name)
         arr = tk.Frame(self, bg=BG)
         arr.pack(**pad)
-        for label, val in (("←", "left"), ("↑", "up"), ("→", "right")):
+        for label, val in (("←", "left"), ("↑", "up"), ("↓", "down"), ("→", "right")):
             self._hold_button(arr, label, "arrow", val)
 
         # --- transport

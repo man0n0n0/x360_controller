@@ -50,7 +50,7 @@ gauche bouge ne contient que des lignes `joyL`.
 | `trigL`, `trigR` | `0.0` à `1.0` | gâchettes LT et RT (`0.0` = relâchée) |
 | `motorA`, `motorB` | `0.0` à `1.0` | intensité des moteurs de vibration |
 | `button` | `"A"`, `"B"`, `"X"`, `"Y"` ou `null` | bouton maintenu ; `null` = relâché |
-| `arrow` | `"left"`, `"up"`, `"right"` ou `null` | croix directionnelle |
+| `arrow` | `"left"`, `"up"`, `"down"`, `"right"` ou `null` | croix directionnelle (4 directions) |
 
 Pour `joyL` / `joyR` : `x` négatif vers la gauche, `y` négatif vers le
 haut.

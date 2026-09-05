@@ -1,0 +1,112 @@
+{
+ "version": 1,
+ "channels": [
+  "joyL",
+  "joyR",
+  "trigL",
+  "trigR",
+  "motorA",
+  "motorB",
+  "button",
+  "arrow"
+ ],
+ "duration": 14.115,
+ "frames": [
+  [
+   0.5922,
+   {
+    "button": "X"
+   }
+  ],
+  [
+   1.6952,
+   {
+    "button": null
+   }
+  ],
+  [
+   2.3618,
+   {
+    "button": "Y"
+   }
+  ],
+  [
+   3.5622,
+   {
+    "button": null
+   }
+  ],
+  [
+   4.2521,
+   {
+    "button": "A"
+   }
+  ],
+  [
+   5.3399,
+   {
+    "button": null
+   }
+  ],
+  [
+   5.9472,
+   {
+    "button": "B"
+   }
+  ],
+  [
+   7.1169,
+   {
+    "button": null
+   }
+  ],
+  [
+   7.7774,
+   {
+    "button": "B"
+   }
+  ],
+  [
+   8.6996,
+   {
+    "button": null
+   }
+  ],
+  [
+   9.3012,
+   {
+    "button": "A"
+   }
+  ],
+  [
+   10.3567,
+   {
+    "button": null
+   }
+  ],
+  [
+   10.852,
+   {
+    "button": "Y"
+   }
+  ],
+  [
+   11.9321,
+   {
+    "button": null
+   }
+  ],
+  [
+   12.4048,
+   {
+    "button": "X"
+   }
+  ],
+  [
+   14.115,
+   {
+    "button": null
+   }
+  ]
+ ]
+}

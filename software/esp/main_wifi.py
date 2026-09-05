@@ -245,7 +245,7 @@ trigger_r_rest = 180 - trigger_travel  # RT is mirrored: 180 -> 120
 S = 0.015       # internal control-loop interval, in seconds — see note above on the 20 ms PWM floor
 
 buttons = {"A": 90, "B": 170, "Y": 40, "X": 140}
-arrows = {"left": 20, "up": 90, "right": 160}
+arrows = {"down": 40, "right": 140, "up": 90, "left": 180}
 
 # ---------------------------------------------------------------------
 # Calibration mode
@@ -263,7 +263,7 @@ arrows = {"left": 20, "up": 90, "right": 160}
 # ---------------------------------------------------------------------
 CALIBRATION = {
     "colored": 90,               # coloured-button servo, off every button
-    "arrow": 90,                 # d-pad servo, centred between left and right
+    "arrow": 65,                 # d-pad servo, off every one of the four directions
     "joyL_x": centerxl,          # left stick, both axes centred
     "joyL_y": centeryl,
     "joyR_x": centerxr,          # right stick, both axes centred
@@ -340,7 +340,7 @@ async def button_task():
 
 async def arrow_task():
     prev = "__unset__"          # sentinel so the very first cycle also triggers
-    current_angle = 45          # assumed neutral position before any press
+    current_angle = 65          # assumed neutral position before any press
     while True:
         if state["calibrating"]:
             prev = "__unset__"          # see button_task
@@ -352,8 +352,11 @@ async def arrow_task():
             if a in arrows:
                 current_angle = arrows[a]
             else:
-                # released: move a small direction to de-engage the button
-                current_angle = current_angle + 45 if current_angle < 90 else current_angle -45
+                # released: move a small direction to de-engage the arrow.
+                # 25 deg lands midway between two of the four positions
+                # (40 -> 65, 90 -> 65, 140 -> 115, 180 -> 155) so no
+                # neighbouring direction is pressed on the way out.
+                current_angle = current_angle + 25 if current_angle < 90 else current_angle - 25
             arrow_servo.move(current_angle)
             prev = a
         await asyncio.sleep(S)
@@ -573,6 +576,7 @@ PAGE = """<!DOCTYPE html>
 <div class="row arrows">
   <button id="btnLeft">&#8592;</button>
   <button id="btnUp">&#8593;</button>
+  <button id="btnDown">&#8595;</button>
   <button id="btnRight">&#8594;</button>
 </div>
 <script>
@@ -631,6 +635,7 @@ bindHold("btnA", "button", "A");
 bindHold("btnB", "button", "B");
 bindHold("btnLeft", "arrow", "left");
 bindHold("btnUp", "arrow", "up");
+bindHold("btnDown", "arrow", "down");
 bindHold("btnRight", "arrow", "right");
 
 function bindPad(padId, stickId, key){

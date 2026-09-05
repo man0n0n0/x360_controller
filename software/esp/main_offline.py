@@ -32,7 +32,7 @@ PROTOCOL — newline-delimited JSON, one object per line, both directions.
       {"motorA": f}         0.0 .. 1.0 vibration intensity
       {"motorB": f}
       {"button": "A"|"B"|"X"|"Y"|null}      null == released
-      {"arrow": "left"|"up"|"right"|null}
+      {"arrow": "left"|"up"|"right"|"down"|null}
       {"ping": 1}           -> device replies {"ev": "pong"}
       {"get": 1}            -> device replies with a full state dump
       {"stop": 1}           -> zero every output immediately
@@ -200,8 +200,8 @@ trigger_l_rest = trigger_travel
 trigger_r_rest = 180 - trigger_travel
 S = 0.015       # internal control-loop interval, in seconds
 
-buttons = {"A": 90, "B": 170, "Y": 40, "X": 140}
-arrows = {"left": 20, "up": 90, "right": 160}
+buttons = {"A": 40, "B": 140, "Y": 90, "X": 180}
+arrows = {"down": 40, "right": 140, "up": 90, "left": 180}
 
 LINK_TIMEOUT_MS = 1500   # host silence after which outputs are zeroed
 SERIAL_POLL = 0.005      # how often the RX task drains the USB buffer
@@ -214,7 +214,7 @@ SERIAL_POLL = 0.005      # how often the RX task drains the USB buffer
 # ---------------------------------------------------------------------
 CALIBRATION = {
     "colored": 90,               # coloured-button servo, off every button
-    "arrow": 90,                 # d-pad servo, centred
+    "arrow": 90,                 # d-pad servo, off every one of the four directions
     "joyL_x": centerxl,          # sticks centred
     "joyL_y": centeryl,
     "joyR_x": centerxr,
@@ -380,7 +380,7 @@ async def button_task():
 
 async def arrow_task():
     prev = "__unset__"
-    current_angle = 45
+    current_angle = 65
     while True:
         if state["calibrating"]:
             prev = "__unset__"
@@ -392,7 +392,10 @@ async def arrow_task():
             if a in arrows:
                 current_angle = arrows[a]
             else:
-                current_angle = current_angle + 45 if current_angle < 90 else current_angle - 45
+                # 25 deg lands midway between two of the four positions
+                # (40 -> 65, 90 -> 65, 140 -> 115, 180 -> 155) so no
+                # neighbouring direction is pressed on the way out.
+                current_angle = current_angle + 25 if current_angle < 90 else current_angle - 25
             arrow_servo.move(current_angle)
             prev = a
         await asyncio.sleep(S)
