@@ -42,7 +42,7 @@ donne accès au REPL (Thonny).
 |---|---|
 | 0 / 1 | stick gauche X / Y |
 | 2 / 3 | stick droit X / Y |
-| 20 | croix directionnelle |
+| 20 | croix directionnelle (4 directions) |
 | 21 | boutons colorés (A/B/X/Y) |
 | 4 / 10 | gâchettes LT / RT — pilotées par **RMT**, les 6 canaux LEDC étant déjà pris |
 | 5 / 6 | L298N IN1 / IN2 — moteur de vibration A |
@@ -85,3 +85,4 @@ gâchettes récupérées sur la manette d'origine, puis réglage des hauteurs po
 
 Révision 1. À corriger : friction sur les boutons colorés ; la notice
 d'assemblage reste à compléter.
+# x360_controller
