@@ -16,7 +16,7 @@ une vidéo, pour une installation qui tourne sans opérateur.
 | `software/raspberrypi/control_example/` | exemple d'installation : `record.py` (éditeur séquence/vidéo), `show.py` (lecture plein écran synchronisée), `caption.webm` |
 | `img/` | photos de montage et schéma de câblage (`img/GPIO_servo`) |
 | `FORMAT_JSON.md` | format des séquences |
-| `notice.odt`, `notice.pdf` | notice d'assemblage illustrée (le `.pdf` est exporté depuis le `.odt`) |
+| `notice.pdf` | notice d'assemblage illustrée |
 
 ## Architecture
 
@@ -78,11 +78,6 @@ une séquence face à une vidéo et `show.py` diffuse vidéo + séquence en plei
 
 ## Assemblage
 
-Voir `notice.odt` / `notice.pdf` : inserts à chaud et aimants, pose des
-servos, câblage GPIO, montage des guignols, tube PTFE des joysticks, gâchettes récupérées sur
+Voir `notice.pdf` : inserts à chaud et aimants, pose des servos, câblage
+GPIO, montage des guignols, tube PTFE des joysticks, gâchettes récupérées sur
 la manette d'origine, puis réglage des hauteurs pour éviter les frottements.
-
-## État
-
-Révision 1. À corriger : friction sur les boutons colorés ; la notice
-d'assemblage reste à compléter.
