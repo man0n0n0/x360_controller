@@ -1,4 +1,4 @@
-# Automated-x360-controller
+# x360_controller
 
 Manette Xbox 360 « jouée » par des servomoteurs : sticks, croix, boutons
 colorés, gâchettes et moteurs de vibration sont actionnés mécaniquement
@@ -8,14 +8,15 @@ une vidéo, pour une installation qui tourne sans opérateur.
 
 ## Contenu du dépôt
 
-| Dossier | Contenu |
+| Dossier / fichier | Contenu |
 |---|---|
 | `hardware/` | sources FreeCAD (`.FCStd`) et STL prêts à imprimer : coques, plaques, supports servo, mécanisme joystick PTFE, outil de perçage |
-| `software/esp/` | firmware MicroPython de l'ESP32-C3 (`main_offline.py`, `main_wifi.py`, `boot.py`, `lib/servo.py`) |
-| `software/raspberrypi/` | maître Linux `control_host.py` (interface Tk + enregistreur) et séquences JSON |
-| `notshipped/` | outils d'atelier non livrés : `record.py` (éditeur séquence/vidéo), `show.py` (lecture plein écran synchronisée) |
+| `software/esp/` | firmware MicroPython de l'ESP32-C3 (`main_offline.py`, `main_wifi.py`, `boot.py`, `lib/servo.py`, `tools/servo_helper.py`) |
+| `software/raspberrypi/` | maître Linux `control_host.py` (interface Tk + enregistreur) et séquence de test `button_test.json` |
+| `software/raspberrypi/control_example/` | exemple d'installation : `record.py` (éditeur séquence/vidéo), `show.py` (lecture plein écran synchronisée), `caption.webm` |
 | `img/` | photos de montage et schéma de câblage (`img/GPIO_servo`) |
-| `notice.md`, `notice.odt` | notice d'assemblage (le `.odt` est généré depuis le `.md`) |
+| `FORMAT_JSON.md` | format des séquences |
+| `notice.odt`, `notice.pdf` | notice d'assemblage illustrée (le `.pdf` est exporté depuis le `.odt`) |
 
 ## Architecture
 
@@ -56,33 +57,32 @@ vitesse est modulée sur les broches IN.
 
 ```bash
 # hôte
-pip install pyserial              # + pygame et ffmpeg pour show.py / record.py
+pip install pyserial              # + pygame et ffmpeg pour control_example/
 python3 software/raspberrypi/control_host.py /dev/ttyACM0
 ```
 
 - **Mode calibration** — appui sur BOOT, LED bleue allumée : tous les servos
   se placent en position de montage. C'est dans cet état qu'on installe les
-  pièces mécaniques (voir `notice.md`).
+  pièces mécaniques (voir la notice).
 - **Failsafe** — sans message pendant 1,5 s, l'ESP32 remet toutes les sorties
   à zéro. L'hôte envoie `{"hb": 1}` quelques fois par seconde pendant les
   silences.
 
 ## Séquences
 
-Format documenté dans [`software/raspberrypi/FORMAT_JSON.md`](software/raspberrypi/FORMAT_JSON.md) :
-JSON versionné, images en **deltas** horodatés, éditable à la main.
-`control_host.py` enregistre et rejoue ; `record.py` permet de composer une
-séquence face à une vidéo ; `show.py` diffuse vidéo + séquence en plein écran.
+Format documenté dans [`FORMAT_JSON.md`](FORMAT_JSON.md) : JSON versionné,
+images en **deltas** horodatés, éditable à la main. `control_host.py`
+enregistre et rejoue ; dans `control_example/`, `record.py` permet de composer
+une séquence face à une vidéo et `show.py` diffuse vidéo + séquence en plein
+écran.
 
 ## Assemblage
 
-Voir `notice.md` (ou `notice.odt`, illustré) : inserts à chaud et aimants,
-pose des servos, câblage GPIO, montage des guignols, tube PTFE des joysticks,
-gâchettes récupérées sur la manette d'origine, puis réglage des hauteurs pour
-éviter les frottements.
+Voir `notice.odt` / `notice.pdf` : inserts à chaud et aimants, pose des
+servos, câblage GPIO, montage des guignols, tube PTFE des joysticks, gâchettes récupérées sur
+la manette d'origine, puis réglage des hauteurs pour éviter les frottements.
 
 ## État
 
 Révision 1. À corriger : friction sur les boutons colorés ; la notice
 d'assemblage reste à compléter.
-# x360_controller

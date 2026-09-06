@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.py[cod]
+venv/
+.venv/
+
+# FreeCAD backups
+*.FCBak
+*.FCStd1
+
+# Claude Code local settings
+**/.claude/settings.local.json
+
+# OS
+.DS_Store

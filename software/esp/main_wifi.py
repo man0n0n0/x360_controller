@@ -263,7 +263,7 @@ arrows = {"down": 40, "right": 140, "up": 90, "left": 180}
 # ---------------------------------------------------------------------
 CALIBRATION = {
     "colored": 90,               # coloured-button servo, off every button
-    "arrow": 65,                 # d-pad servo, off every one of the four directions
+    "arrow": 90,                 # d-pad servo, off every one of the four directions
     "joyL_x": centerxl,          # left stick, both axes centred
     "joyL_y": centeryl,
     "joyR_x": centerxr,          # right stick, both axes centred
