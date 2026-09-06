@@ -8,9 +8,8 @@ venv/
 *.FCBak
 *.FCStd1
 
-# Claude Code local settings
-**/.claude/settings.local.json
-
 # OS
 .DS_Store
+
+# Documents privés
 famringsimulatorcontroller_invoic.*

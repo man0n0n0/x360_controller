@@ -70,11 +70,63 @@ python3 software/raspberrypi/control_host.py /dev/ttyACM0
 
 ## Séquences
 
-Format documenté dans [`FORMAT_JSON.md`](FORMAT_JSON.md) : JSON versionné,
-images en **deltas** horodatés, éditable à la main. `control_host.py`
-enregistre et rejoue ; dans `control_example/`, `record.py` permet de composer
-une séquence face à une vidéo et `show.py` diffuse vidéo + séquence en plein
-écran.
+`control_host.py` enregistre et rejoue les séquences ; dans
+`control_example/`, `record.py` permet de composer une séquence face à une
+vidéo et `show.py` diffuse vidéo + séquence en plein écran.
+
+### Format JSON
+
+Un fichier de séquence est du JSON ordinaire, versionné et modifiable à la
+main :
+
+```json
+{
+  "version": 1,
+  "channels": ["joyL", "joyR", "trigL", "trigR",
+               "motorA", "motorB", "button", "arrow"],
+  "duration": 29.2813,
+  "frames": [
+    [2.0284, {"arrow": "up"}],
+    [2.4451, {"arrow": null}],
+    [3.1761, {"arrow": "right", "trigL": 0.5}]
+  ]
+}
+```
+
+Chaque entrée de `frames` est une paire `[temps, changements]` : le temps en
+secondes depuis le début, et **uniquement les canaux qui changent** à cet
+instant. On enregistre des différences, pas l'état complet — un canal absent
+garde sa valeur précédente. Les entrées doivent être triées par temps
+croissant.
+
+| Canal | Valeur | Signification |
+|---|---|---|
+| `joyL`, `joyR` | `[x, y]`, de `-1.0` à `1.0` | sticks gauche et droit (`x` négatif vers la gauche, `y` négatif vers le haut) |
+| `trigL`, `trigR` | `0.0` à `1.0` | gâchettes LT et RT (`0.0` = relâchée) |
+| `motorA`, `motorB` | `0.0` à `1.0` | intensité des moteurs de vibration |
+| `button` | `"A"`, `"B"`, `"X"`, `"Y"` ou `null` | bouton maintenu ; `null` = relâché |
+| `arrow` | `"left"`, `"up"`, `"down"`, `"right"` ou `null` | croix directionnelle |
+
+`button` et `arrow` ne sont pas des impulsions : ils restent actifs jusqu'à ce
+qu'on les remette à `null`. Un appui s'écrit donc toujours en deux entrées, et
+il est prudent de terminer une séquence en remettant tous les canaux au
+neutre.
+
+### Envoi par USB
+
+L'ESP32 attend **un objet JSON par ligne**, terminé par `\n`, avec exactement
+les clés des `frames` : rejouer une séquence revient à réémettre chaque entrée
+au bon moment. Quelques commandes s'y ajoutent :
+
+| Envoyé | Effet |
+|---|---|
+| `{"stop": 1}` | remet immédiatement toutes les sorties à zéro |
+| `{"ping": 1}` | l'ESP32 répond `{"ev": "pong"}` |
+| `{"get": 1}` | l'ESP32 renvoie son état complet |
+| `{"hb": 1}` | battement de cœur, sans autre effet |
+
+Détail complet, exemple de lecteur en Python et messages émis par la carte
+dans [`FORMAT_JSON.md`](FORMAT_JSON.md).
 
 ## Assemblage
 
