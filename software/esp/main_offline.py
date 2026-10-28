@@ -133,12 +133,24 @@ class RMTServo:
 # ---------------------------------------------------------------------
 # Hardware map
 # ---------------------------------------------------------------------
+# Servos are brought up one at a time, STARTUP_STAGGER_MS apart: eight
+# arms jumping at once draw enough inrush current to trip the C3's
+# brownout detector and reset the board, which then starts them all
+# again — a boot loop that looks like the servos moving on their own.
+STARTUP_STAGGER_MS = 150
+
 colored = Servo(pin=21)
+time.sleep_ms(STARTUP_STAGGER_MS)
 arrow_servo = Servo(pin=20)
+time.sleep_ms(STARTUP_STAGGER_MS)
 servoxl = Servo(pin=0)
+time.sleep_ms(STARTUP_STAGGER_MS)
 servoyl = Servo(pin=1)
+time.sleep_ms(STARTUP_STAGGER_MS)
 servoxr = Servo(pin=2)
+time.sleep_ms(STARTUP_STAGGER_MS)
 servoyr = Servo(pin=3)
+time.sleep_ms(STARTUP_STAGGER_MS)
 
 # machine.bitstream (the neopixel timing generator) claims one RMT
 # channel at startup, leaving only one of the C3's two TX channels free.
@@ -146,8 +158,15 @@ servoyr = Servo(pin=3)
 # here since no addressable LEDs are driven.
 RMT.bitstream_channel(None)
 
-trigger_l = RMTServo(channel=0, pin=4, home=0)
-trigger_r = RMTServo(channel=1, pin=10, home=180)
+trigger_travel = 35  # degrees swept from released (0) to fully pulled (1.0)
+trigger_l_rest = trigger_travel
+trigger_r_rest = 180 - trigger_travel
+
+# Homed straight to their rest angle, so trigger_task's first pass finds
+# them already in place and does not move them a second time.
+trigger_l = RMTServo(channel=0, pin=4, home=trigger_l_rest)
+time.sleep_ms(STARTUP_STAGGER_MS)
+trigger_r = RMTServo(channel=1, pin=10, home=trigger_r_rest)
 
 status_pin = Pin(8, Pin.OUT)   # SuperMini built-in LED, active LOW
 
@@ -163,9 +182,6 @@ boot_button = Pin(9, Pin.IN, Pin.PULL_UP)
 centerxl, centeryl = 90, 90
 centerxr, centeryr = 90, 90
 radius = 9      # max servo travel, in degrees, at full joystick deflection
-trigger_travel = 35  # degrees swept from released (0) to fully pulled (1.0)
-trigger_l_rest = trigger_travel
-trigger_r_rest = 180 - trigger_travel
 S = 0.015       # internal control-loop interval, in seconds
 
 buttons = {"A": 40, "B": 140, "Y": 90, "X": 180}
@@ -402,14 +418,25 @@ async def boot_button_task():
     # while it is active: the control loops check the flag on their own
     # S interval, so one of them can still push a stale angle out just
     # after the mode changes. Continuously re-asserting wins that race.
-    prev = 1                       # active low, released == 1
+    # Seeded with the live level, not "released": BOOT is often still held
+    # from the reset that skipped boot.py, and that must not count as a
+    # press that drops the rig into calibration on its own.
+    prev = boot_button.value()     # active low, released == 1
     while True:
         v = boot_button.value()
         if prev == 1 and v == 0:                  # falling edge = press
             state["calibrating"] = not state["calibrating"]
             status_led(state["calibrating"])
             send({"ev": "calib", "on": state["calibrating"]})
-            await asyncio.sleep(0.2)              # ride out contact bounce
+            if state["calibrating"]:
+                # Park one servo at a time — all eight at once is the
+                # same brownout as at startup. The bounce delay is
+                # covered by the stagger.
+                for name, angle in CALIBRATION.items():
+                    SERVOS[name].move(angle)
+                    await asyncio.sleep_ms(STARTUP_STAGGER_MS)
+            else:
+                await asyncio.sleep(0.2)          # ride out contact bounce
             v = boot_button.value()
         prev = v
 
