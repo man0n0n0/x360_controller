@@ -492,4 +492,11 @@ async def main():
         motorB_en.run(),
     )
 
-asyncio.run(main())
+# RMT channels are not released by Ctrl-C or a soft reset; without this,
+# re-importing either main file in the same session fails at RMT() with
+# ESP_ERR_NOT_FOUND because both TX channels are still held.
+try:
+    asyncio.run(main())
+finally:
+    trigger_l.deinit()
+    trigger_r.deinit()
