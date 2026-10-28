@@ -7,6 +7,12 @@ no HTTP server, no WebSocket and no embedded browser UI. A master
 program on a Linux host drives the rig over the native USB CDC port
 instead (see control_host.py).
 
+NO MOTOR DRIVER:
+  The L298N vibration motors are gone from this build. GPIO5-8 are no
+  longer driven, and GPIO8 is only the SuperMini's built-in LED again.
+  The "motorA" / "motorB" keys are still accepted but ignored, so the
+  host program needs no change.
+
 WHY USB IS THE FASTER LINK, NOT THE SLOWER ONE:
   The Wi-Fi build spends most of its latency budget on radio, not on
   code — association, retries, and the AP's own beacon interval. Native
@@ -29,8 +35,6 @@ PROTOCOL — newline-delimited JSON, one object per line, both directions.
       {"joyR": [x, y]}
       {"trigL": f}          0.0 (released) .. 1.0 (fully pulled)
       {"trigR": f}
-      {"motorA": f}         0.0 .. 1.0 vibration intensity
-      {"motorB": f}
       {"button": "A"|"B"|"X"|"Y"|null}      null == released
       {"arrow": "left"|"up"|"right"|"down"|null}
       {"ping": 1}           -> device replies {"ev": "pong"}
@@ -61,9 +65,8 @@ RUNNING IT:
   Ctrl-C still interrupts: the protocol is plain ASCII JSON and never
   contains a 0x03 byte, so there is no reason to disable the interrupt.
 
-For the full pin rationale, the LEDC-versus-RMT explanation and the
-L298N wiring notes, see the docstring of main.py — all of it applies
-here unchanged.
+For the full pin rationale and the LEDC-versus-RMT explanation, see the
+docstring of main.py.
 """
 
 import sys
@@ -115,37 +118,16 @@ class RMTServo:
         if us == self._last_us:
             return
         self._last_us = us
+        # Stop the running frame before loading the new one, then restart
+        # the loop — the sequence verified on the hardware with
+        # tools/rmt_debug.py.
+        self._rmt.loop(False)
+        self._rmt.loop(True)
         self._rmt.write_pulses((us, self._period_us - us), 1)
 
     def deinit(self):
         self._rmt.loop(False)
         self._rmt.deinit()
-
-
-# ---------------------------------------------------------------------
-# Software PWM for the two L298N intensity pins.
-# ---------------------------------------------------------------------
-class SoftPWM:
-    def __init__(self, pin, freq=200):
-        self._pin = Pin(pin, Pin.OUT)
-        self._pin.value(0)
-        self._period = 1.0 / freq
-        self.duty = 0.0
-
-    async def run(self):
-        while True:
-            d = self.duty
-            if d <= 0.0:
-                self._pin.value(0)
-                await asyncio.sleep(self._period)
-            elif d >= 1.0:
-                self._pin.value(1)
-                await asyncio.sleep(self._period)
-            else:
-                self._pin.value(1)
-                await asyncio.sleep(self._period * d)
-                self._pin.value(0)
-                await asyncio.sleep(self._period * (1.0 - d))
 
 
 # ---------------------------------------------------------------------
@@ -167,28 +149,14 @@ RMT.bitstream_channel(None)
 trigger_l = RMTServo(channel=0, pin=4, home=0)
 trigger_r = RMTServo(channel=1, pin=10, home=180)
 
-motorA_dir = Pin(6, Pin.OUT)   # IN2
-motorA_dir.value(0)
-motorA_en = SoftPWM(pin=5)     # IN1 — intensity
-
-motorB_dir = Pin(8, Pin.OUT)   # IN4 — also the board's built-in LED
-motorB_en = SoftPWM(pin=7)     # IN3
+status_pin = Pin(8, Pin.OUT)   # SuperMini built-in LED, active LOW
 
 
 def status_led(on):
-    # GPIO8 does double duty: it is IN4 on the driver and the SuperMini's
-    # built-in LED, which is active LOW. Lighting it for calibration mode
-    # therefore leaves IN4 HIGH for the whole of normal operation, which
-    # reverses motor B and inverts what a duty on IN3 means. motor_b_task
-    # compensates for the duty; the reversal is harmless on a vibration
-    # motor, which buzzes the same either way.
-    motorB_dir.value(0 if on else 1)
+    status_pin.value(0 if on else 1)
 
 
-status_led(False)              # boot straight into the non-calibrating state
-motorB_en.duty = 1.0           # IN4 is HIGH at rest; match it on IN3 to brake,
-                               # or the motor runs flat out until motor_b_task
-                               # gets its first cycle in.
+status_led(False)
 
 boot_button = Pin(9, Pin.IN, Pin.PULL_UP)
 
@@ -239,8 +207,6 @@ state = {
     "arrow": None,
     "joyL": (0.0, 0.0),
     "joyR": (0.0, 0.0),
-    "motorA": 0.0,
-    "motorB": 0.0,
     "trigL": 0.0,
     "trigR": 0.0,
     "calibrating": False,
@@ -266,8 +232,6 @@ def zero_outputs():
     state["arrow"] = None
     state["joyL"] = (0.0, 0.0)
     state["joyR"] = (0.0, 0.0)
-    state["motorA"] = 0.0
-    state["motorB"] = 0.0
     state["trigL"] = 0.0
     state["trigR"] = 0.0
 
@@ -280,7 +244,7 @@ def apply_message(msg):
         if k in msg:
             x, y = msg[k]
             state[k] = (clamp(float(x), -1, 1), clamp(float(y), -1, 1))
-    for k in ("motorA", "motorB", "trigL", "trigR"):
+    for k in ("trigL", "trigR"):
         if k in msg:
             state[k] = clamp(float(msg[k]), 0.0, 1.0)
 
@@ -295,8 +259,6 @@ def apply_message(msg):
             "arrow": state["arrow"],
             "joyL": list(state["joyL"]),
             "joyR": list(state["joyR"]),
-            "motorA": state["motorA"],
-            "motorB": state["motorB"],
             "trigL": state["trigL"],
             "trigR": state["trigR"],
             "calibrating": state["calibrating"],
@@ -435,25 +397,6 @@ async def trigger_task():
         await asyncio.sleep(S)
 
 
-async def motor_a_task():
-    while True:
-        motorA_en.duty = 0.0 if state["calibrating"] else state["motorA"]
-        await asyncio.sleep(S)
-
-
-async def motor_b_task():
-    while True:
-        # The L298N drives the motor whenever IN3 and IN4 differ. IN4 is
-        # LOW only while calibrating (see status_led), so the duty that
-        # means "still" flips with the mode. Both branches below hold
-        # state["motorB"] to the same meaning: 0.0 still, 1.0 full.
-        if state["calibrating"]:
-            motorB_en.duty = 0.0
-        else:
-            motorB_en.duty = 1.0 - state["motorB"]
-        await asyncio.sleep(S)
-
-
 async def boot_button_task():
     # Toggles calibration mode, and re-asserts the table every cycle
     # while it is active: the control loops check the flag on their own
@@ -485,11 +428,7 @@ async def main():
         joystick_l_task(),
         joystick_r_task(),
         trigger_task(),
-        motor_a_task(),
-        motor_b_task(),
         boot_button_task(),
-        motorA_en.run(),
-        motorB_en.run(),
     )
 
 # RMT channels are not released by Ctrl-C or a soft reset; without this,
